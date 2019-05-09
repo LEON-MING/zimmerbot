@@ -6,13 +6,32 @@ import sys
 
 # MAIN FUNCTION
 
-def main(query, language_code, filter_method, limit, stub):
+def main(method, query, language_code, filter_method, limit, stub="include"):
     # Process script arguments
     # For now, we only support limiting by number of articles, not total package size
     limit = min(int(limit), 500)
 
-    # Get the query results (list of dictionaries)
-    article_dictionaries = query_articles(query, language_code)[:limit+20]
+    if method == "individual":
+        # Get the query results (list of dictionaries)
+        article_dictionaries = query_articles(query, language_code)[:limit+20]
+    elif method == "category":
+        article_dictionaries = get_articles_in_category(query, language_code, limit)[:limit+20]
+    elif method == "related":
+
+        article_dictionaries = query_related_articles_titles(query, language_code)[:limit+20]
+        
+        
+    elif method == "linked":
+        #todo
+        article_dictionaries = query_linked_articles(query, language_code)[:limit+20]
+        if article_dictionaries == None:
+            print (query + " is not a valid Wikipedia article")
+            sys.exit(0)
+    else:
+        print("Invalid search method. Please choose individual_articles, categories, related_articles, linked_to_articles")
+        sys.exit(0)
+
+
     # List of article titles
     article_names = get_article_names_from_query(article_dictionaries)
 
@@ -55,5 +74,4 @@ if __name__ == "__main__":
     language = language_dict[input("Please enter a language: ").capitalize()]
     filter_method = input("Please enter the filtering method: ")
     limit = input("Enter a limit no more than 500: ")
-    stub = "include"
-    main(query, language, filter_method, limit, stub)
+    main(query, language, filter_method, limit)
