@@ -46,14 +46,17 @@ ORES_SUPPORTED_WIKIS = {"en": "enwiki",
 def get_ores_assessment(article_names, language_code):
     assert language_code in ORES_SUPPORTED_WIKIS, "ORES not supported in " + language_code
 
-    built_url, rev_ids, = build_ores_url(article_names, language_code)
+    if len(article_names) == 0:
+        return {}
+
+    built_url, rev_ids = build_ores_url(article_names, language_code)
     with urllib.request.urlopen(built_url) as url:
         data = json.loads(url.read().decode())
         all_assessments = get_article_assessments(data)
         ores_rating_results = {}
         for i in range(len(article_names)):
-            print("Article Name: " + article_names[i])
-            print("ORES Assessment: " + all_assessments[rev_ids[i]])
+            #print("Article Name: " + article_names[i])
+            #print("ORES Assessment: " + all_assessments[rev_ids[i]])
             ores_rating_results[article_names[i]] = all_assessments[rev_ids[i]]
         return ores_rating_results
 
@@ -62,6 +65,7 @@ def get_ores_assessment(article_names, language_code):
 ##################
 
 # Builds the JSON request URL
+# len(articles_names) > 0
 def build_ores_url(article_names, language_code):
     # Get Wikipedia's revision id for the articles' most recent revision (aka the current version)
     site = pywikibot.getSite(language_code)
@@ -77,11 +81,10 @@ def build_ores_url(article_names, language_code):
 
     return result, rev_ids
 
-
 # Returns the ORES automatic article assessment (see following link for table of assessments:
 # https://www.mediawiki.org/wiki/ORES#/media/File:Article_quality_and_importance.wp10bot.enwiki.png)
 def get_article_assessments(data):
-    print(data)
+    #print(data) article assessments
     scores = {}
     # first index 0 is the wiki (enwiki, ruwiki, or frwiki)
     # second index 0 is the rev_id

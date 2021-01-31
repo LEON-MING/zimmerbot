@@ -6,14 +6,34 @@ import sys
 
 # MAIN FUNCTION
 
-def main(query, language_code, filter_method, limit, stub):
+def main(method, query, language_code, filter_method, limit, stub="include"):
     # Process script arguments
     # For now, we only support limiting by number of articles, not total package size
-    limit = min(int(limit), 500)
 
-    # Get the query results (list of dictionaries)
-    article_dictionaries = query_articles(query, language_code)[:limit+20]
-    # List of article titles
+    # limit = max(min(int(limit), 500), 1)
+
+    # article_dictionaries is a list of dictionaries
+    if method == "individual":
+        article_dictionaries = query_articles(query, language_code)[:limit+20]
+    elif method == "page_links":
+        article_dictionaries = query_article_links(query, language_code, limit)
+    elif method == "category":
+        article_dictionaries = get_articles_in_category(query, language_code, limit)[:limit+20]
+    elif method == "related":
+        article_dictionaries = query_related_articles_titles(query, language_code)[:limit+20]
+    elif method == "linked":
+        article_dictionaries = query_linked_articles(query, language_code)
+        if article_dictionaries == None:
+            print(query + " is not a valid Wikipedia article")
+            article_dictionaries = []
+            sys.exit(0)
+        else:
+            article_dictionaries = article_dictionaries[:limit+20]
+    else:
+        print("Invalid search method. Please choose individual_articles, categories, related_articles, linked_to_articles")
+        sys.exit(0)
+
+    # list of strings
     article_names = get_article_names_from_query(article_dictionaries)
 
     if filter_method == "ores_quality" or stub == "exclude":
@@ -25,15 +45,20 @@ def main(query, language_code, filter_method, limit, stub):
             article_names = [name for name in article_names if name in scaled_ores_rating_results]
 
     # Dictionary of page objects with article names as keys
-    articles = get_articles_from_names(article_names, language_code) # {"title: page_object"}
+    articles = get_articles_from_names(article_names, language_code) # {"name: page_object"}
+
     # Initialize empty dictionary of article ratings hashed by article name/title
     article_ratings = {} # {"title: numerical_article_score"}
 
     if filter_method == "ores_quality":
             article_ratings = scaled_ores_rating_results
     elif filter_method == "popularity":
-        for article in articles:
-            article_ratings[article] = get_page_view(article, language_code)
+        for k in list(articles.keys()):
+            pageview = get_page_view(k, language_code)
+            if pageview != -1:
+                article_ratings[k] = pageview
+            else:
+                articles.pop(k)
     elif filter_method == "most_linked_to":
         for article in articles:
             article_ratings[article] = count_backlinks(article, language_code)
@@ -51,9 +76,11 @@ def process_results(sorted_articles):
     return results
 
 if __name__ == "__main__":
-    query = input("Please enter your query: ")
-    language = language_dict[input("Please enter a language: ").capitalize()]
-    filter_method = input("Please enter the filtering method: ")
-    limit = input("Enter a limit no more than 500: ")
-    stub = "include"
-    main(query, language, filter_method, limit, stub)
+    # query = input("Please enter your query: ")
+    # language = language_dict[input("Please enter a language: ").capitalize()]
+    # filter_method = input("Please enter the filtering method: ")
+    # limit = input("Enter a limit no more than 500: ")
+    #print(main("category", "query", "language", "filter_method", number, "include"))
+    lst = main("linked", "polling trends", "en", "ores_quality", 10, "exclude")
+    print("----", lst)
+    print("LENGTH: ", len(lst))
